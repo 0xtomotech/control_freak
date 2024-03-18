@@ -19,6 +19,7 @@ def generate_unique_code():
 
 
 class Room(models.Model):
+    # id field automatically created
     code = models.CharField(max_length=8, default="", unique=True)
     host = models.CharField(max_length=60, unique=True)
     guest_can_pause = models.BooleanField(null=False, default=False)
