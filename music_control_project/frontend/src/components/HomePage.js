@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import RoomJoinPage from "./RoomJoinPage";
 import CreateRoomPage from "./CreateRoomPage";
 import Room from "./Room";
-import RoomWrapper from "./RoomWrapper";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 export default class HomePage extends Component {
