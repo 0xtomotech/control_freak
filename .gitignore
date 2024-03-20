@@ -1,2 +1,3 @@
 venv/
 music_control_project/frontend/node_modules/
+.env
