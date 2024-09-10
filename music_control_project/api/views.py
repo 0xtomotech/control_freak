@@ -93,3 +93,27 @@ class UserInRoom(APIView):
             'code': self.request.session.get('room_code')
         }
         return JsonResponse(data, status=status.HTTP_200_OK)
+
+
+class LeaveRoom(APIView):
+    def post(self, request, format=None):
+        if 'room_code' in self.request.session:
+            # pop deletes the code from the session!!!
+            room_code = request.session.pop('room_code')
+            # Mark the session as "modified" to ensure it's saved
+            request.session.modified = True
+
+            host_id = self.request.session.session_key
+            room_results = Room.objects.filter(host=host_id)
+            # if room exists, delete room
+            if room_results.exists():
+                room = room_results.first()
+                room.delete()
+                message = 'Room deleted and left successfully'
+            else:
+                message = 'Room left successfully'
+
+            # If room was deleted or just left, the response is the same.
+            return Response({'Message': message}, status=status.HTTP_200_OK)
+
+        return Response({'Message': 'No room to leave'}, status=status.HTTP_400_BAD_REQUEST)

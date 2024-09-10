@@ -1,58 +1,99 @@
-import React, { Component } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Grid, Button, Typography } from '@mui/material';
 
-class Room extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            votesToSkip: 2,
-            guestCanPause: false,
-            isHost: false,
+const Room = () => {
+    const { roomCode } = useParams();
+    const navigate = useNavigate();
+    const [roomDetails, setRoomDetails] = useState({
+        votesToSkip: 2,
+        guestCanPause: false,
+        isHost: false,
+    });
+
+    useEffect(() => {
+        const abortController = new AbortController();
+        const signal = abortController.signal;
+
+        const getRoomDetails = async () => {
+            try {
+                const response = await fetch(`/api/get-room?code=${roomCode}`, { signal: signal });
+                if (!response.ok) {
+                    navigate("/");
+                    throw new Error('Network response was not ok'); // This might still be useful for logging but won't prevent the navigation.
+                } else {
+                    const data = await response.json();
+                    setRoomDetails({
+                        votesToSkip: data.votes_to_skip,
+                        guestCanPause: data.guest_can_pause,
+                        isHost: data.is_host,
+                    });
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error("Failed to fetch room details: ", error);
+                    navigate("/");
+                }          
+            }
         };
-    }
-    // By moving the call to this.getRoomDetails() into componentDidMount, you ensure the component is fully mounted before fetching data. 
-    componentDidMount() {
-        this.getRoomDetails();
-    }
+    
+        getRoomDetails();
 
-    getRoomDetails() {
-        fetch('/api/get-room' + '?code=' + this.props.roomCode)
+        return () => {
+            abortController.abort();
+        };
+    
+    }, [roomCode, navigate]); // Depend on roomCode and navigate to re-run effect if they change
+
+    const leaveButtonPressed = () => {
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        };
+
+        fetch('/api/leave-room', requestOptions)
         .then((response) => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                return response.json().then(data => {
+                    throw new Error(data.Message || 'Failed to leave the room');
+                });
             }
-            return response.json()
+            return response.json();
         })
         .then((data) => {
-            this.setState({
-                votesToSkip: data.votes_to_skip,
-                guestCanPause: data.guest_can_pause,
-                isHost: data.is_host,
-            });
+            console.log(data.Message);
+            navigate("/");
         })
         .catch((error) => {
-            console.error("Failed to fetch room details: ", error);
-            // Handle failure (e.g., by setting state to show an error message)
+            console.error(error);
+            navigate("/");
         });
-    }
+    };
 
-    render() {
-        // Access roomCode directly from props now
-        const { roomCode } = this.props;
-        return (
-            <div>
-                <h3>{roomCode}</h3>
-                <p>Votes: {this.state.votesToSkip}</p>
-                <p>Guest Can Pause: {this.state.guestCanPause.toString()}</p>
-                <p>Host: {this.state.isHost.toString()}</p>
-            </div>
-        );
-    }
-}
+    return (
+        <Grid container spacing={1}>
+            <Grid item xs={12} align="center">
+                <Typography variant="h6" component="h6">
+                    Code: {roomCode}
+                </Typography>
+            </Grid>
+            <Grid item xs={12} align="center">
+                <Typography variant="h6" component="h6">
+                    Guest can pause: {roomDetails.guestCanPause.toString()}
+                </Typography>
+            </Grid>
+            <Grid item xs={12} align="center">
+                <Typography variant="h6" component="h6">
+                    Are you a host: {roomDetails.isHost.toString()}
+                </Typography>
+            </Grid>
+            <Grid item xs={12} align="center">
+                <Button variant="contained" color="secondary" onClick={leaveButtonPressed}>
+                    Leave Room
+                </Button>
+            </Grid>
+        </Grid>
+    );
+};
 
-function RoomWrapper() {
-    const { roomCode } = useParams(); // Use useParams hook to get the route params
-    return <Room roomCode={roomCode} />; // Pass roomCode as a prop to Room
-}
-
-export default RoomWrapper;
+export default Room;
