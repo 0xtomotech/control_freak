@@ -67,7 +67,3 @@ The project is organized into two main parts:
 ## Configuration
 
 The project uses environment variables for sensitive information. Make sure to set up a `.env` file with the necessary variables, such as `SECRET_KEY`.
-
-## Development
-
-For frontend development, you can use the following command to watch for changes and rebuild automatically:
